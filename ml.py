@@ -68,7 +68,8 @@ class ClassificationPipeline:
     """
     A class to represent a classification pipeline
     """
-    __slots__ = ['data_folder', 'file_name', 'x_train', 'x_test', 'y_train', 'y_test', 'params_list', 'pipe_list']
+    __slots__ = ['data_folder', 'file_name', 'x_train', 'x_test', 'y_train', 'y_test', 'params_list', 'pipe_list',
+                 'algorithms']
 
     def __init__(self, data_folder, file_name):
         """
@@ -84,6 +85,7 @@ class ClassificationPipeline:
         self.y_test = None
         self.params_list = None
         self.pipe_list = None
+        self.algorithms = None
         logging.basicConfig(level=logging.INFO)
 
     def load_and_preprocess_data(self) -> None:
@@ -154,14 +156,17 @@ class ClassificationPipeline:
             Pipeline([('preprocessor', preprocessing_features_pipeline()),
                       ('clf_svm', SVC())]),
             Pipeline([('preprocessor', preprocessing_features_pipeline()),
-                      ('clf_lgbm', LGBMClassifier())]),
+                      ('clf_lgbm', LGBMClassifier(verbose=-1))]),
             Pipeline([('preprocessor', preprocessing_features_pipeline()),
                       ('clf_nn', MLPClassifier(max_iter=3000))])
         ]
+        self.algorithms = ['Logistic Regression', 'K-Nearest Neighbors', 'Naive Bayes', 'Random Forest', 'SVM',
+                           'LightGBM', 'Neural Network']
 
-    def fit_and_evaluate_classifier(self, pipe: Pipeline, params: dict) -> None:
+    def fit_and_evaluate_classifier(self, pipe: Pipeline, params: dict, algorithms: list) -> None:
         """
         Fit and evaluate a classifier
+        :param algorithms:
         :param pipe:
         :param params:
         :return:
@@ -170,6 +175,7 @@ class ClassificationPipeline:
         search = clf.fit(self.x_train, self.y_train)
         y_pred = search.predict(self.x_test)
         cm = confusion_matrix(self.y_test, y_pred)
+        print(f"Confusion Matrix for {algorithms}")
         print(cm)
 
         precision = precision_score(self.y_test, y_pred, average='micro')
@@ -185,8 +191,8 @@ class ClassificationPipeline:
         Fit and evaluate all classifiers
         :return:
         """
-        for params, pipe in zip(self.params_list, self.pipe_list):
-            self.fit_and_evaluate_classifier(pipe, params)
+        for params, pipe, algorithms in zip(self.params_list, self.pipe_list, self.algorithms):
+            self.fit_and_evaluate_classifier(pipe, params, algorithms)
 
     def run(self) -> None:
         """
